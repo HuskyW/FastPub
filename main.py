@@ -8,6 +8,7 @@ from utils.Naming import GroundTruthPickleName, SupportCountPickleName
 from models.SFP import SfpHandler
 from utils.Print import printLog
 import os
+import math
 
 
 def ckeckWithGroundTruth(result,truth):
@@ -17,7 +18,8 @@ def ckeckWithGroundTruth(result,truth):
             tp += 1
     precision = tp/len(result)
     recall = tp/len(truth)
-    print("Precision: %.2f; Recall: %.2f" % (precision,recall))
+    f1 = 2*(precision*recall) / (precision + recall)
+    print("Precision: %.2f; Recall: %.2f; F1: %.2f" % (precision,recall,f1))
     return precision, recall
 
 def getGroundTruth(args):
@@ -60,6 +62,10 @@ if __name__ == '__main__':
         print("Bad argument: dataset")
 
     #dataset = [[1,4,7,8,3,5]]
+
+    args.orig_num_participents = args.num_participants
+    if args.orig_num_participents <= 1:
+        args.num_participants = int(math.floor(dataset.get_traj_num() * args.duplicate * args.orig_num_participents) )
 
     if args.mode == 'groundtruth':
         if args.dataset == 'zipf':
