@@ -5,7 +5,7 @@
 from utils.Candidate import generateCandidates
 from collections import defaultdict
 from models.DataSet import DataSet,Trajectory
-from utils.Naming import GroundTruthPickleName
+from utils.Naming import GroundTruthPickleName, SupportCountPickleName
 import pickle
 import multiprocess
 import math
@@ -19,9 +19,8 @@ def ground_truth_worker(dataset,process_idx,candidates,participents,queue,verbos
         if idx > 0 and idx % milestone == 0 and verbose:
             print("Worker %2d: %d%% done" % (process_idx,int(round(idx*100/len(participents)))))
         client_idx = participents[idx]
-        traj = dataset.get_trajectory(client_idx)
         for candi in candidates:
-            if traj.checkSubSeq(candi) is True:
+            if dataset.checkSubSeq(client_idx,candi) is True:
                 local_support_count[candi] += 1
 
     queue.put(local_support_count)
@@ -38,8 +37,7 @@ def groundTruth(dataset,args):
     printRound(1)
     support_count = defaultdict(lambda : 0)
     for traj_idx in range(traj_num):
-        traj = dataset.get_trajectory(traj_idx)
-        locations = traj.allLocations()
+        locations = dataset.allLocations(traj_idx)
         for loc in locations:
             support_count[loc] += 1
     # filter out
@@ -108,6 +106,13 @@ def groundTruth(dataset,args):
     results = sorted(results,key=lambda item:item[1],reverse=True)
     for frag in results:
         print('%s: %d' % (str(frag[0]),frag[1]))
+
+    support_count_record = {}
+    support_count_record['data'] = results
+    support_count_record['k'] = k
+    scName = SupportCountPickleName(args)
+    with open(scName,'wb') as fp:
+        pickle.dump(support_count_record,fp)
 
     return fragments
 

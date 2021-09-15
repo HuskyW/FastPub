@@ -7,9 +7,10 @@ import math
 import numpy as np
 from collections import defaultdict
 from utils.Candidate import generateCandidates
-from utils.Sampling import CandidateSampler, sampleClients
+from utils.Sampling import CandidateSampler
 from utils.Print import printRound
 import multiprocess
+import random
 
 
 class Handler(metaclass=abc.ABCMeta):
@@ -29,7 +30,22 @@ class FastPubHandler(Handler):
         self.eta = [0] * self.args.l
         self.thres = [0] * self.args.l
         self.c_len = [0] * self.args.l
+        self.client_list = []
+        self.markov_thres = 0.8
+        self.markov_record = {}
+        for i in range(self.args.duplicate):
+            self.client_list.extend(list(range(self.orig_traj_num)))
+        random.shuffle(self.client_list)
+        
+        
 
+    def __sampleClients(self):
+        if self.args.one_participation is False:
+            res = np.random.choice(clients,m,replace=False)
+            return res
+        res = self.client_list[0:self.args.num_participants]
+        self.client_list = self.client_list[self.args.num_participants:len(self.client_list)]
+        return res
 
 
     def __calculateEta(self):
@@ -52,12 +68,12 @@ class FastPubHandler(Handler):
         return max(intrinsic_thres,observative_thres)   
 
     
-    def __one_client(self,traj,candidates):
+    def __one_client(self,client_idx,candidates):
         candi_len = len(candidates)
         candi_save = list(candidates)
         response = [0] * candi_len
         for i in range(len(candidates)):
-            if traj.checkSubSeq(candi_save[i]) is True:
+            if self.dataset.checkSubSeq(client_idx,candi_save[i]) is True:
                 response[i] = 1
         response = randomBits(response,self.eta[self.round])
         final_response = {}
@@ -75,9 +91,8 @@ class FastPubHandler(Handler):
                 print("Worker %2d: %d%% done" % (proc_idx,int(round(idx*100/len(participents)))))
             
             client_idx = participents[idx]
-            traj = self.dataset.get_trajectory(client_idx)
             candis = sampler.sample(self.c_len[self.round])
-            res = self.__one_client(traj,candis)
+            res = self.__one_client(client_idx,candis)
 
             for key,value in res.items():
                 local_support_count[key] += value
@@ -97,6 +112,18 @@ class FastPubHandler(Handler):
         for i in range(self.args.admit_threshold):
             res.append(sc_sorted[i][0])
         return res
+
+    def __denoiseCount(self,count,average_query,eta):
+        freq = count/average_query
+        estimate_true_freq = (freq - eta) / (1 - 2 * eta)
+        return estimate_true_freq * self.clients_num
+
+    def __markovGuess(self,f):
+        list_f = list(f)
+        frag1 = tuple(list_f[0:len(f)-1])
+        frag2 = tuple(list_f[1:len(f)])
+        frag3 = tuple(list_f[1:len(f)-1])
+        return self.markov_record[frag1] * self.markov_record[frag2] / self.markov_record[frag3]
         
         
 
@@ -112,17 +139,25 @@ class FastPubHandler(Handler):
                 candidates = []
                 for i in range(self.loc_num):
                     candidates.append((i,))
-            print("%d-fragments: %d candidates" % (fragment_len+1,len(candidates)))
+            print("%d-fragments: %d candidates after Apriori filter" % (fragment_len+1,len(candidates)))
             if len(candidates) == 0:
                 print('No candidate with length ' + str(fragment_len+1))
                 return None
+
+            if self.args.markov_filter is True and fragment_len >= 3:
+                filtered_candidates = []
+                for f in candidates:
+                    if self.__markovGuess(f) >= self.markov_thres * self.args.k:
+                        filtered_candidates.append(f)
+                candidates = filtered_candidates
+                print("%d-fragments: %d candidates after Markov filter" % (fragment_len+1,len(candidates)))
 
             self.c_len[fragment_len] = min(self.args.c_max,len(candidates))
             self.eta[fragment_len] = self.__calculateEta()
 
             sampler = CandidateSampler(candidates)
 
-            participents = sampleClients(self.args,self.orig_traj_num,self.args.num_participants)
+            participents = self.__sampleClients()
 
             support_count = defaultdict(lambda : 0)
             
@@ -132,9 +167,8 @@ class FastPubHandler(Handler):
                     if idx % 100000 == 0 and idx > 0 and self.args.verbose:
                         print("%d trajectories checked" % idx)
                     client_idx = participents[idx]
-                    traj = self.dataset.get_trajectory(client_idx)
                     candis = sampler.sample(self.c_len[self.round])
-                    res = self.__one_client(traj,candis)
+                    res = self.__one_client(client_idx,candis)
                     for key,value in res.items():
                         support_count[key] += value
             else:
@@ -170,6 +204,9 @@ class FastPubHandler(Handler):
             self.thres[fragment_len] = self.__calculateThres(query_per_candi)
 
             fragments = self.__filterCandidates(support_count)
+            for f in fragments:
+                count_estimate = self.__denoiseCount(support_count[f], query_per_candi, self.eta[fragment_len])
+                self.markov_record[f] = count_estimate
 
 
             print("eta: %.3f" % self.eta[fragment_len])

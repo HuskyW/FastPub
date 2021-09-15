@@ -15,7 +15,10 @@ def printLog(args,performance):
     record += 'l=%d;' % args.l
     record += 'k=%d;' % args.k
     record += 'dup=%d;' % args.duplicate
-    record += 'm=%d;' % args.num_participants
+    if args.orig_num_participents > 1:
+        record += 'm=%d;' % int(args.orig_num_participents)
+    else:
+        record += 'm=%.2f;' % float(args.orig_num_participents)
 
     if args.mode == 'fastpub':
         record += 'epsilon=%.1f;' % args.epsilon
