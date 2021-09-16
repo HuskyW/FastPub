@@ -65,7 +65,7 @@ class FastPubHandler(Handler):
         if self.args.softk is True and self.round != self.args.l-1:
             return observative_thres
 
-        return max(intrinsic_thres,observative_thres)   
+        return intrinsic_thres  
 
     
     def __one_client(self,client_idx,candidates):

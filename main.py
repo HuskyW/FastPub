@@ -91,6 +91,7 @@ if __name__ == '__main__':
         ground_truth = groundTruthFromConfig(config,args)
     elif args.dataset == 'msnbc' or args.dataset == 'oldenburg':
         ground_truth = getGroundTruth(args)
+    print("Num. ground truth: %d" % len(ground_truth))
     if len(fragments) > 0:
         precision, recall = ckeckWithGroundTruth(fragments,ground_truth)
     else:
