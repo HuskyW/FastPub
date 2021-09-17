@@ -144,7 +144,7 @@ class FastPubHandler(Handler):
                 print('No candidate with length ' + str(fragment_len+1))
                 return None
 
-            if self.args.markov_filter > 0 and fragment_len >= 3:
+            if self.args.markov_filter > 0 and fragment_len >= 2:
                 filtered_candidates = []
                 for f in candidates:
                     if self.__markovGuess(f) >= self.markov_thres * self.args.k:
