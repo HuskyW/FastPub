@@ -31,7 +31,7 @@ class FastPubHandler(Handler):
         self.thres = [0] * self.args.l
         self.c_len = [0] * self.args.l
         self.client_list = []
-        self.markov_thres = 0.8
+        self.markov_thres = self.args.markov_filter
         self.markov_record = {}
         for i in range(self.args.duplicate):
             self.client_list.extend(list(range(self.orig_traj_num)))
@@ -144,7 +144,7 @@ class FastPubHandler(Handler):
                 print('No candidate with length ' + str(fragment_len+1))
                 return None
 
-            if self.args.markov_filter is True and fragment_len >= 3:
+            if self.args.markov_filter > 0 and fragment_len >= 3:
                 filtered_candidates = []
                 for f in candidates:
                     if self.__markovGuess(f) >= self.markov_thres * self.args.k:

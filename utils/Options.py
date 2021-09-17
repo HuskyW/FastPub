@@ -16,7 +16,7 @@ def args_parser():
     parser.add_argument('--softk', action='store_true', help='loosy k parameter thresholding')
     parser.add_argument('--admit_threshold', type=int, default=-1, help="Number of admit fragments in each round, -1: no thresholding")
     parser.add_argument('--one_participation', type=bool, default=True, help="each client can only participate once, raise error when insufficient clients")
-    parser.add_argument('--markov_filter', type=bool, default=True, help="FASTPub only, filter the candidate in each round based on the Markov independent assumption")
+    parser.add_argument('--markov_filter', type=float, default=0.8, help="FASTPub only, filter the candidate in each round based on the Markov independent assumption")
     
     # Settings
     parser.add_argument('--dataset', type=str, default='msnbc', help="msnbc || zipf || oldenburg")

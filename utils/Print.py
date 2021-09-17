@@ -24,10 +24,7 @@ def printLog(args,performance):
         record += 'epsilon=%.1f;' % args.epsilon
         record += 'c_max=%d;' % args.c_max
         record += 'xi=%.2f;' % args.xi
-        if args.markov_filter is True:
-            record += 'markov=1'
-        else:
-            record += 'markov=0'
+        record += 'markov=%.2f;' % args.markov_filter
     if args.mode == 'sfp':
         record += 'epsilon=%.1f;' % args.epsilon
         record += 'sfp_threshold=%d;' % args.sfp_threshold
