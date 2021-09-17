@@ -41,7 +41,7 @@ class FastPubHandler(Handler):
 
     def __sampleClients(self):
         if self.args.one_participation is False:
-            res = np.random.choice(clients,m,replace=False)
+            res = np.random.choice(self.clients_list,self.args.num_participants,replace=False)
             return res
         res = self.client_list[0:self.args.num_participants]
         self.client_list = self.client_list[self.args.num_participants:len(self.client_list)]
