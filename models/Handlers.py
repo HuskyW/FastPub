@@ -142,7 +142,7 @@ class FastPubHandler(Handler):
             print("%d-fragments: %d candidates after Apriori filter" % (fragment_len+1,len(candidates)))
             if len(candidates) == 0:
                 print('No candidate with length ' + str(fragment_len+1))
-                return None
+                return []
 
             if self.args.markov_filter > 0 and fragment_len >= 2:
                 filtered_candidates = []
