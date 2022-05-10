@@ -4,6 +4,7 @@ from utils.Print import printRound
 import multiprocess
 from collections import defaultdict
 import multiprocess
+from models.Database import CountingDatabase
 
 class Node():
     def __init__(self,parent,data,uid):
@@ -118,9 +119,20 @@ class TriehhHandler(Handler):
             print("Worker %2d: all done" % proc_idx)
         return
 
+    def update_db(self,key,value,db):
+        fragment_pref = self.tree.traceBack(key[0])
+        fragment_list = list(fragment_pref)
+        fragment_list.append(key[1])
+        est_value = value * self.client_num / self.args.num_participants
+        for i in range(0,len(fragment_list)):
+            f = tuple(fragment_list[i:len(fragment_list)])
+            if len(f) > 0:
+                db.add_record(f,est_value)
+
 
 
     def run(self):
+        db = CountingDatabase(self.args.l,self.args.k,self.client_num)
         for round_idx in range(1,self.args.round_threshold+1):
             printRound(round_idx)
             participents = sampleClients(self.args,self.orig_traj_num,self.args.num_participants)
@@ -165,6 +177,8 @@ class TriehhHandler(Handler):
                 if value >= self.threshold:
                     update += 1
                     self.tree.addLeaf(key[0],key[1])
+                    self.update_db(key,value,db)
+
             
             print("%d leaf added" % update)
 
@@ -173,7 +187,7 @@ class TriehhHandler(Handler):
         
         tries = self.tree.allTrie()
         tries_fixed = self.fixTrieLength(tries)
-        return tries_fixed
+        return tries_fixed, db
                 
             
 

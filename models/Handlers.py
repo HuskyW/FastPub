@@ -11,6 +11,7 @@ from utils.Sampling import CandidateSampler
 from utils.Print import printRound
 import multiprocess
 import random
+from models.Database import CountingDatabase
 
 
 class Handler(metaclass=abc.ABCMeta):
@@ -129,6 +130,8 @@ class FastPubHandler(Handler):
 
     def run(self):
 
+        db = CountingDatabase(self.args.l,self.args.k,self.clients_num)
+
         # publish longer fragments
         for fragment_len in range(0,self.args.l):
             self.round = fragment_len
@@ -151,7 +154,7 @@ class FastPubHandler(Handler):
 
             if len(candidates) == 0:
                 print('No candidate with length ' + str(fragment_len+1))
-                return []
+                return [], db
 
             self.c_len[fragment_len] = min(self.args.c_max,len(candidates))
             self.eta[fragment_len] = self.__calculateEta()
@@ -208,13 +211,14 @@ class FastPubHandler(Handler):
             for f in fragments:
                 count_estimate = self.__denoiseCount(support_count[f], query_per_candi, self.eta[fragment_len])
                 self.markov_record[f] = count_estimate
+                db.add_record(f,count_estimate)
 
 
             print("eta: %.3f" % self.eta[fragment_len])
             print("thres: %.2f" % self.thres[fragment_len])
             print("%d-fragments: %d admitted" % (fragment_len+1,len(fragments)))
 
-        return fragments
+        return fragments, db
                 
                 
 

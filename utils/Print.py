@@ -12,6 +12,8 @@ def printLog(args,performance):
     record += '%s;' % str(args.mode)
     record += 'precision=%.4f;' % performance[0]
     record += 'recall=%.4f;' % performance[1]
+    record += 'avg_error=%.4f;' % performance[2]
+    record += 'med_error=%.4f;' % performance[3]
     record += 'l=%d;' % args.l
     record += 'k=%d;' % args.k
     record += 'dup=%d;' % args.duplicate

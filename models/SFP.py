@@ -366,7 +366,7 @@ class SfpHandler(Handler):
         cutted = self.__fixResLength(desired)
         print('Target fragment found: %d' % len(cutted))
 
-        return cutted
+        return cutted, None
 
     def test(self):
         a_cms,b_cms = self.__initCms()
