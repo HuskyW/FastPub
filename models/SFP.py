@@ -12,16 +12,17 @@ import random
 from models.Handlers import Handler
 from utils.Sampling import sampleClients
 import itertools
+from models.Database import SketchDatabase
 
 class SfpHandler(Handler):
     def __init__(self,args,dataset):
         self.args = args
         self.dataset = dataset
-        self.fixed_traj_len = 6 # must be even and >= 4
+        self.fixed_traj_len = int(2*math.ceil(self.args.l/2)) # must be even and >= 4
         self.frag_option_num = int(self.fixed_traj_len/2)
 
-        self.hash_size = 1024
-        self.hash_num = 2048
+        self.hash_size = 1024 # m: entries of each row
+        self.hash_num = 2048  # k: number of hashing rows
 
         self.unique_hash_size = 256
         
@@ -37,8 +38,9 @@ class SfpHandler(Handler):
         self.epsilon_b = self.args.epsilon - self.epsilon_a
 
         self.popular_threshold = self.args.sfp_threshold
+        self.client_num = self.dataset.get_traj_num() * self.args.duplicate
 
-        self.k_thres = (self.args.k * self.args.num_participants * self.args.k_cut) / (self.dataset.get_traj_num() * self.args.duplicate)
+        self.k_thres = (self.args.k * self.args.num_participants * self.args.k_cut) /  self.client_num
 
         if self.args.process <= 0:
             print('Our SFP implementation only works in multi-process')
@@ -114,8 +116,8 @@ class SfpHandler(Handler):
         return res
 
     def __cEpsilon(self,epsilon):
-        top = math.e ** (epsilon/2.0) + 1.0
-        bottom = math.e ** (epsilon/2.0) - 1.0
+        top = (math.e ** (epsilon/2.0)) + 1.0
+        bottom = (math.e ** (epsilon/2.0)) - 1.0
         res = top/(2.0 * bottom)
         return res
     
@@ -366,7 +368,10 @@ class SfpHandler(Handler):
         cutted = self.__fixResLength(desired)
         print('Target fragment found: %d' % len(cutted))
 
-        return cutted, None
+        self.a_cms_save = a_cms
+        db = SketchDatabase(self)
+
+        return cutted, db
 
     def test(self):
         a_cms,b_cms = self.__initCms()
@@ -386,5 +391,27 @@ class SfpHandler(Handler):
         print(f)
         return
 
+    def padding_query(self,query):
+        padding = []
+        if self.args.l % 2 == 0:
+            padding.append(query)
+            return padding
+        possible_elements = list(range(self.dataset.location_num))
+        possible_elements.append(-1)
+        for x in possible_elements:
+            temp = query.copy()
+            temp.append(x)
+            padding.append(temp)
+            temp = query.copy()
+            temp.insert(0,x)
+            padding.append(temp)
+        return padding
 
+    def query(self,q):
+        padding = self.padding_query(q)
+        f = 0
+        for x in padding:
+            f_res = self.__estimateFeq(self.a_cms_save,str(x),0)
+            f += f_res
+        return f * self.client_num / self.args.num_participants
 

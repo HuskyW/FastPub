@@ -43,3 +43,9 @@ class CountingDatabase(Database):
             print(key)
             print(val)
 
+class SketchDatabase(Database):
+    def __init__(self,handler):
+        self.handler = handler
+
+    def query(self,query):
+        return self.handler.query(query)
