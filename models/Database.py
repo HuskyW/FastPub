@@ -26,7 +26,7 @@ class CountingDatabase(Database):
         qlen = len(query)
 
         if qlen <= 1:
-            return 0
+            return self.k # let TrieHH cheat! FASTPub never use this line
         
         qlist = list(query)
         leftpart = tuple(qlist[0:qlen-1])

@@ -51,9 +51,9 @@ def queryError(db,truth):
         # print(noisy_count)
         # print(error)
     avg_error = sum(error_list)/len(error_list)
-    median_error = np.median(error_list)
+    med_error = np.median(error_list)
     print("Average query error: %.2f" % avg_error)
-    print("Median query error: %.2f" % median_error)
+    print("Median query error: %.2f" % med_error)
     return avg_error,med_error
 
 
@@ -66,9 +66,9 @@ def queryErrorRef(db,truth,fragment):
         error = abs(noisy_count-true_count)/true_count
         error_list.append(error)
     avg_error = sum(error_list)/len(error_list)
-    median_error = np.median(error_list)
+    med_error = np.median(error_list)
     print("Average query error on mined patterns: %.2f" % avg_error)
-    print("Median query error on mined patterns: %.2f" % median_error)
+    print("Median query error on mined patterns: %.2f" % med_error)
     return avg_error
 
 if __name__ == '__main__':
