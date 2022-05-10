@@ -140,9 +140,6 @@ class FastPubHandler(Handler):
                 for i in range(self.loc_num):
                     candidates.append((i,))
             print("%d-fragments: %d candidates after Apriori filter" % (fragment_len+1,len(candidates)))
-            if len(candidates) == 0:
-                print('No candidate with length ' + str(fragment_len+1))
-                return []
 
             if self.args.markov_filter > 0 and fragment_len >= 2:
                 filtered_candidates = []
@@ -151,6 +148,10 @@ class FastPubHandler(Handler):
                         filtered_candidates.append(f)
                 candidates = filtered_candidates
                 print("%d-fragments: %d candidates after Markov filter" % (fragment_len+1,len(candidates)))
+
+            if len(candidates) == 0:
+                print('No candidate with length ' + str(fragment_len+1))
+                return []
 
             self.c_len[fragment_len] = min(self.args.c_max,len(candidates))
             self.eta[fragment_len] = self.__calculateEta()
