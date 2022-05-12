@@ -18,7 +18,8 @@ class SfpHandler(Handler):
     def __init__(self,args,dataset):
         self.args = args
         self.dataset = dataset
-        self.fixed_traj_len = int(2*math.ceil(self.args.l/2)) # must be even and >= 4
+        self.fixed_traj_len = int(2*math.ceil((self.args.l+1)/2)) # must be even and >= 4
+        #self.fixed_traj_len = 6
         self.frag_option_num = int(self.fixed_traj_len/2)
 
         self.hash_size = 1024 # m: entries of each row
@@ -393,25 +394,60 @@ class SfpHandler(Handler):
 
     def padding_query(self,query):
         padding = []
-        if self.args.l % 2 == 0:
-            padding.append(query)
+        if self.fixed_traj_len == len(query):
+            padding.append(tuple(query))
             return padding
         possible_elements = list(range(self.dataset.location_num))
         possible_elements.append(-1)
         for x in possible_elements:
-            temp = query.copy()
+            temp = list(query)
             temp.append(x)
-            padding.append(temp)
-            temp = query.copy()
+            padding.append(tuple(temp))
+            temp = list(query)
             temp.insert(0,x)
-            padding.append(temp)
-        return padding
+            padding.append(tuple(temp))
+        if self.fixed_traj_len == len(query) + 1:
+            return padding
+        full_padding = set()
+        for p in padding:
+            temp_padding = self.padding_query(p)
+            full_padding = full_padding.union(temp_padding)
+        return list(full_padding)
+
+    def __query_worker(self,workload,queue):
+        f = 0
+        for x in workload:
+            f_res = self.__estimateFeq(self.a_cms_save,str(list(x)),0)
+            f += f_res
+        queue.put(f)
+        return
+
 
     def query(self,q):
         padding = self.padding_query(q)
-        f = 0
-        for x in padding:
-            f_res = self.__estimateFeq(self.a_cms_save,str(x),0)
-            f += f_res
-        return f * self.client_num / self.args.num_participants
+        if len(padding) < 100:
+            f = 0
+            for x in padding:
+                f_res = self.__estimateFeq(self.a_cms_save,str(list(x)),0)
+                f += f_res
+            return f * self.client_num / self.args.num_participants
+        mananger = multiprocess.Manager()
+        queue = mananger.Queue()
+        jobs = []
+        workload = math.floor(len(padding)/self.args.process)
+        for proc_idx in range(self.args.process):
+            if proc_idx == self.args.process - 1:
+                process_load = padding[proc_idx*workload:len(padding)]
+            else:
+                process_load = padding[proc_idx*workload:(proc_idx+1)*workload]
+            
+            p = multiprocess.Process(target=self.__query_worker,args=(process_load,queue))
+            jobs.append(p)
+            p.start()
+
+        for p in jobs:
+            p.join()
+
+        results = [queue.get() for j in jobs]
+        return sum(results) * self.client_num / self.args.num_participants
 
