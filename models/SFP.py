@@ -18,7 +18,7 @@ class SfpHandler(Handler):
     def __init__(self,args,dataset):
         self.args = args
         self.dataset = dataset
-        self.fixed_traj_len = int(2*math.ceil((self.args.l+1)/2)) # must be even and >= 4
+        self.fixed_traj_len = int(2*math.ceil((self.args.l)/2)) # must be even and >= 4
         #self.fixed_traj_len = 6
         self.frag_option_num = int(self.fixed_traj_len/2)
 
