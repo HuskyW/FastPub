@@ -144,11 +144,14 @@ class FastPubHandler(Handler):
                     candidates.append((i,))
             print("%d-fragments: %d candidates after Apriori filter" % (fragment_len+1,len(candidates)))
 
+            killed_fragment = []
             if self.args.markov_filter > 0 and fragment_len >= 2:
                 filtered_candidates = []
                 for f in candidates:
                     if self.__markovGuess(f) >= self.markov_thres * self.args.k:
                         filtered_candidates.append(f)
+                    else:
+                        killed_fragment.append(f)
                 candidates = filtered_candidates
                 print("%d-fragments: %d candidates after Markov filter" % (fragment_len+1,len(candidates)))
 
@@ -218,7 +221,7 @@ class FastPubHandler(Handler):
             print("thres: %.2f" % self.thres[fragment_len])
             print("%d-fragments: %d admitted" % (fragment_len+1,len(fragments)))
 
-        return fragments, db
+        return fragments, db, killed_fragment
                 
                 
 

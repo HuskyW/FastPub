@@ -13,7 +13,7 @@ import math
 import numpy as np
 
 
-def ckeckWithGroundTruth(result,truth):
+def ckeckWithGroundTruth(result,truth,killed):
     tp = 0
     for frag in result:
         if frag in truth:
@@ -22,6 +22,13 @@ def ckeckWithGroundTruth(result,truth):
     recall = tp/len(truth)
     f1 = 2*(precision*recall) / (precision + recall)
     print("Precision: %.2f; Recall: %.2f; F1: %.2f" % (precision,recall,f1))
+
+    badkill = 0
+    for frag in killed:
+        if frag not in truth:
+            badkill += 1
+    print("Bad kill: %d / %d (%.4f)" % (badkill , len(killed), badkill / len(killed)))
+
     return precision, recall
 
 def getGroundTruth(args):
@@ -110,7 +117,7 @@ if __name__ == '__main__':
             handler = TriehhHandler(args,dataset)
         elif args.mode == 'sfp':
             handler = SfpHandler(args,dataset)
-        fragments, db = handler.run()
+        fragments, db, killed = handler.run()
         # if args.verbose:
         #     for frag in fragments:
         #         print(frag)
@@ -122,7 +129,7 @@ if __name__ == '__main__':
         ground_truth, ground_truth_rec = getGroundTruth(args)
     print("Num. ground truth: %d" % len(ground_truth))
     if len(fragments) > 0:
-        precision, recall = ckeckWithGroundTruth(fragments,ground_truth)
+        precision, recall = ckeckWithGroundTruth(fragments,ground_truth,killed)
         avg_error,med_error = queryError(db,ground_truth_rec)
         queryErrorRef(db,ground_truth_rec,fragments)
     else:
